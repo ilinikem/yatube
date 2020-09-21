@@ -50,10 +50,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'yatube.urls'
 
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATES_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -113,3 +115,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+# теперь логотип можно будет запросить по адресу sitename.ex**/static/**images/logo.png
+
+# задаём адрес директории, куда командой *collectstatic* будет собрана вся статика
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
