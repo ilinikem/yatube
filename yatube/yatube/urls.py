@@ -25,8 +25,6 @@ urlpatterns = [
         # регистрация и авторизация
         path('auth/', include('users.urls')),
         path('auth/', include('django.contrib.auth.urls')),
-        # импорт из приложения posts
-        path('', include('posts.urls')),
 ]
 
 # добавим новые пути
@@ -35,4 +33,9 @@ urlpatterns += [
         path('terms/', views.flatpage, {'url': '/terms/'}, name='terms'),
         path('about-author/', views.flatpage, {'url': '/about-author/'}, name='about-author'),
         path('about-spec/', views.flatpage, {'url': '/about-spec/'}, name='about-spec'),
+]
+
+urlpatterns += [
+        # импорт из приложения posts
+        path('', include('posts.urls')),
 ]
