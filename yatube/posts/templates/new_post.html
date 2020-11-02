@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Добавить новый пост{% endblock %}
-{% block header %}Добавить новую публикацию{% endblock %}
+{% block title %}{% if post.id%}Редактировать пост{% else %}Добавить новый пост{% endif%}{% endblock %}
+{% block header %}{% if post.id%}Редактировать пост{% else %}Добавить новый пост{% endif%}{% endblock %}
 {% block content %}
 {# загружаем фильтр #}
 {% load user_filters %}
 <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
-            <div class="card-header">Добавить новую публикацию</div>
+            <div class="card-header">{% if post.id%}Редактировать пост{% else %}Добавить новый пост{% endif%}</div>
             <div class="card-body">
 
               {% for error in form.errors %}
@@ -36,7 +36,7 @@
 
                     <div class="col-md-6 offset-md-4">
                             <button type="submit" class="btn btn-primary">
-                                Опубликовать
+                                {% if post.id%}Сохранить{% else %}Добавить{% endif%}
                             </button>
                     </div>
                 </form>

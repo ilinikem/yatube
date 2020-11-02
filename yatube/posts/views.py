@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 
@@ -69,13 +70,13 @@ def new_post(request):
 
 def profile(request, username):
     # тут тело функции
-    profile = get_object_or_404(User, username=username)
+    profile = get_object_or_404(User.objects.annotate(posts_count=Count("posts")), username=username)
     post_list = (
         Post
-        .objects
-        .filter(author=profile)
-        .order_by('-pub_date')
-        .all()
+            .objects
+            .filter(author=profile)
+            .order_by('-pub_date')
+            .all()
     )
     count_post = post_list.count()
     paginator = Paginator(post_list, 5)  # показывать по 5 записей на странице.
@@ -87,14 +88,22 @@ def profile(request, username):
         "profile": profile,
         'page': page,
         'paginator': paginator
-               }
+    }
     return render(request, 'profile.html', context)
 
 
 def post_view(request, username, post_id):
-    # тут тело функции
-
-    return render(request, 'post.html', {})
+    profile = get_object_or_404(User.objects.annotate(posts_count=Count("posts")), username=username)
+    post = get_object_or_404(
+        Post.objects.select_related("author")
+            .select_related("group"),
+        pk=post_id, author=profile
+    )
+    context = {
+        "profile": profile,
+        "post": post,
+    }
+    return render(request, "post.html", context)
 
 
 def post_edit(request, username, post_id):
@@ -102,4 +111,21 @@ def post_edit(request, username, post_id):
     # что текущий пользователь — это автор записи.
     # В качестве шаблона страницы редактирования укажите шаблон создания новой записи
     # который вы создали раньше (вы могли назвать шаблон иначе)
-    return render(request, 'post_new.html', {})
+    post = get_object_or_404(Post, id=post_id)
+    # проверка, что текущий юзер и автор поста совпадают
+    if request.user == post.author:
+        if request.method == "POST":
+            form = PostForm(request.POST)
+            if form.is_valid():
+                post = form.save(commit=False)
+                post.author = request.user
+                post.save()
+                return redirect("post", username=username, post_id=post_id)
+        else:
+            form = PostForm(instance=post)
+            context = {
+                "form": form,
+                "post": post
+            }
+        return render(request, "new_post.html", context)
+    return redirect("post", username=username, post_id=post_id)
