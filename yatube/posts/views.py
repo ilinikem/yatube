@@ -1,21 +1,22 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
-import datetime
+from django.core.paginator import Paginator
 
 from .forms import PostForm
 from .models import User, Post, Group
 
 
-
 def index(request):
-    latest = Post.objects.order_by("-pub_date")
-    # Create query for order_by
-    start_date = datetime.date(1854, 7, 7)
-    end_date = datetime.date(1854, 7, 21)
-    author = User.objects.get(username="leo")
-    posts = Post.objects.filter(text__contains="Утро").filter(author=author).filter(
-        pub_date__range=(start_date, end_date))
-    return render(request, "index.html", {"posts": posts})
+    post_list = Post.objects.order_by('-pub_date').all()
+    paginator = Paginator(post_list, 10)  # показывать по 10 записей на странице.
+
+    page_number = request.GET.get('page')  # переменная в URL с номером запрошенной страницы
+    page = paginator.get_page(page_number)  # получить записи с нужным смещением
+    return render(
+        request,
+        'index.html',
+        {'page': page, 'paginator': paginator}
+    )
 
 
 def group_posts(request, slug):
@@ -64,3 +65,41 @@ def new_post(request):
 
     form = PostForm()
     return render(request, 'new_post.html', {'form': form})
+
+
+def profile(request, username):
+    # тут тело функции
+    profile = get_object_or_404(User, username=username)
+    post_list = (
+        Post
+        .objects
+        .filter(author=profile)
+        .order_by('-pub_date')
+        .all()
+    )
+    count_post = post_list.count()
+    paginator = Paginator(post_list, 5)  # показывать по 5 записей на странице.
+    page_number = request.GET.get('page')  # переменная в URL с номером запрошенной страницы
+    page = paginator.get_page(page_number)  # получить записи с нужным смещением
+    context = {
+        "post_list": post_list,
+        "count_post": count_post,
+        "profile": profile,
+        'page': page,
+        'paginator': paginator
+               }
+    return render(request, 'profile.html', context)
+
+
+def post_view(request, username, post_id):
+    # тут тело функции
+
+    return render(request, 'post.html', {})
+
+
+def post_edit(request, username, post_id):
+    # тут тело функции. Не забудьте проверить,
+    # что текущий пользователь — это автор записи.
+    # В качестве шаблона страницы редактирования укажите шаблон создания новой записи
+    # который вы создали раньше (вы могли назвать шаблон иначе)
+    return render(request, 'post_new.html', {})

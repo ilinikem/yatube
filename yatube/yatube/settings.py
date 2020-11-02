@@ -24,13 +24,20 @@ SECRET_KEY = 'jck4*@u$(6c_o3@z@4%d3x(bz=8m95pis*ud=aee_#_w9m81lq'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+        "localhost",
+        "127.0.0.1",
+        "[::1]",
+        "testserver",
+]
 
 # Application definition
 
 INSTALLED_APPS = [
     'users',  # приложение для пользователей users
     'posts',  # наше приложение posts**
+    'django.contrib.sites',
+    'django.contrib.flatpages',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -122,8 +129,10 @@ STATIC_URL = '/static/'
 # задаём адрес директории, куда командой *collectstatic* будет собрана вся статика
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
-# Login
+# Идентификатор текущего сайта
+SITE_ID = 1
 
+# Login
 LOGIN_URL = "/auth/login/"
 LOGIN_REDIRECT_URL = "index"
 # LOGOUT_REDIRECT_URL = "index"
