@@ -53,10 +53,10 @@ class CreatePostTest(TestCase):
         # Изменяем пост
         self.client.post(
                 reverse("post_edit", kwargs={"username": "makson", "post_id": self.post.id}),
-                {"text": "My new post(refactor)"},
+                {"text": "My new post(refactor)!"},
                 follow=True,
             )
         # Проверяем наличие измененного поста на главной странцие, странице пользователя, странице отдельного поста
         for i in ("", self.user, f'{self.user}/{self.post.id+1}'):
             response = self.client.get(f'/{i}/')
-            self.assertContains(response, "My new post(refactor)")
+            self.assertContains(response, "My new post(refactor)!")
