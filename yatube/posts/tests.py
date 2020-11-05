@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 
 from .models import User, Post
+from django.conf import settings
 
 
 class TestProfile(TestCase):
@@ -60,3 +61,20 @@ class CreatePostTest(TestCase):
         for i in ("", self.user, f'{self.user}/{self.post.id+1}'):
             response = self.client.get(f'/{i}/')
             self.assertContains(response, "My new post(refactor)!")
+
+
+class Error404Test(TestCase):
+    def test_404_page(self):
+        # создаем подключение
+        self.client = Client()
+        # Получаем ответ со странице /404
+        response = self.client.get("/404/")
+        # Проверяем соответствует ли ответ, коду ошибки
+        self.assertEqual(response.status_code, 404)
+        # Проверяем, что если режим отладки отключен, мы используем заданный шаблон
+        if not settings.DEBUG:
+            self.assertTemplateUsed(
+                response, template_name="misc/404.html"
+            )
+        # Проверяем передана ли в контекст нужная переменная
+        self.assertEqual(response.context["path"], "/404/")
