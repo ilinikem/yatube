@@ -45,8 +45,8 @@
 
 
 
-        <div class="card-body">
-                <div class="card mb-3 mt-1 shadow-sm">
+
+
                         <div class="card-body">
                                 <p class="card-text">
                                         <!-- Ссылка на страницу автора в атрибуте href; username автора в тексте ссылки -->
@@ -65,9 +65,10 @@
                                         <!-- Дата публикации  -->
                                         <small class="text-muted">{{ post.pub_date}}</small>
                                 </div>
+                            {% include 'comments.html' %}
                         </div>
-                </div>
-     </div>
+
+
     </div>
 </main>
 {% endblock %}

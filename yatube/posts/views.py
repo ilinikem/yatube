@@ -3,8 +3,8 @@ from django.db.models import Count
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 
-from .forms import PostForm
-from .models import User, Post, Group
+from .forms import PostForm, CommentForm
+from .models import User, Post, Group, Comment
 
 
 def index(request):
@@ -21,15 +21,29 @@ def index(request):
 
 
 def group_posts(request, slug):
-    # функция get_object_or_404 получает по заданным критериям объект из базы данных
-    # или возвращает сообщение об ошибке, если объект не найден
-
+    # тут тело функции
     group = get_object_or_404(Group, slug=slug)
-
-    # Метод .filter позволяет ограничить поиск по критериям. Это аналог добавления
-    # условия WHERE group_id = {group_id}
-    posts = Post.objects.filter(group=group).order_by("-pub_date")[:12]
-    return render(request, "group.html", {"group": group, "posts": posts})
+    # posts = (
+    #     Post.objects.filter(group=group)
+    #         .order_by("-pub_date")
+    #         .all()
+    # )
+    posts = (
+        Post.objects.filter(group=group)
+        .select_related("author")
+        .order_by("-pub_date")
+        .all()
+    )
+    paginator = Paginator(posts, 2)  # показывать по 2 записей на странице.
+    page_number = request.GET.get('page')  # переменная в URL с номером запрошенной страницы
+    page = paginator.get_page(page_number)  # получить записи с нужным смещением
+    context = {
+        "posts": posts,
+        "group": group,
+        'page': page,
+        'paginator': paginator
+    }
+    return render(request, 'group.html', context)
 
 
 @login_required()
@@ -37,7 +51,7 @@ def new_post(request):
     # проверим, пришёл ли к нам POST-запрос или какой-то другой:
     if request.method == 'POST':
         # создаём объект формы класса ContactForm и передаём в него полученные данные
-        form = PostForm(request.POST)
+        form = PostForm(request.POST, files=request.FILES or None)
         # проверяем данные на валидность:
         # ... здесь код валидации ...
 
@@ -92,44 +106,24 @@ def profile(request, username):
     return render(request, 'profile.html', context)
 
 
-def post_view(request, username, post_id):
+def post_view(request, username, post_id, form=None):
     profile = get_object_or_404(User.objects.annotate(posts_count=Count("posts")), username=username)
     post = get_object_or_404(
         Post.objects.select_related("author")
             .select_related("group"),
         pk=post_id, author=profile
     )
+    if form is None:
+        form = CommentForm(request.POST or None)
+    # комментарии к посту
+    items = Comment.objects.select_related("post", "author").filter(post=post)
     context = {
         "profile": profile,
         "post": post,
+        "items": items,
+        "form": form,
     }
     return render(request, "post.html", context)
-
-
-# @login_required
-# def post_edit(request, username, post_id):
-#     # тут тело функции. Не забудьте проверить,
-#     # что текущий пользователь — это автор записи.
-#     # В качестве шаблона страницы редактирования укажите шаблон создания новой записи
-#     # который вы создали раньше (вы могли назвать шаблон иначе)
-#     post = get_object_or_404(Post, id=post_id)
-#     # проверка, что текущий юзер и автор поста совпадают
-#     if request.user == post.author:
-#         if request.method == "POST":
-#             form = PostForm(request.POST or None, files=request.FILES or None, instance=post)
-#             if form.is_valid():
-#                 post = form.save(commit=False)
-#                 post.author = request.user
-#                 post.save()
-#                 return redirect("post", username=username, post_id=post_id)
-#         else:
-#             form = PostForm(instance=post)
-#             context = {
-#                 "form": form,
-#                 "post": post
-#             }
-#         return render(request, "new_post.html", context)
-#     return redirect("post", username=username, post_id=post_id)
 
 
 @login_required
@@ -149,3 +143,39 @@ def post_edit(request, username, post_id):
     return render(
         request, 'new_post.html', {'form': form, 'post': post},
     )
+
+
+def page_not_found(request, exception):
+    # Переменная exception содержит отладочную информацию,
+    # выводить её в шаблон пользователской страницы 404 мы не станем
+    return render(
+        request,
+        "misc/404.html",
+        {"path": request.path},
+        status=404
+    )
+
+
+def server_error(request):
+    return render(request, "misc/500.html", status=500)
+
+
+@login_required
+def add_comment(request, username, post_id):
+    # убираем возможность ручного ввода адреса /username/id/comment
+    # можно только через соответствующую кнопку "Добавить комментарий"
+    if request.method == "GET":
+        return redirect("post", username=username, post_id=post_id)
+    # Получаем пост, для которого будет создан комментарий
+    post = get_object_or_404(Post, id=post_id)
+    if request.method == "POST":
+        form = CommentForm(request.POST or None)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.author = request.user
+            comment.post = post
+            comment.save()
+            return redirect("post", username=username, post_id=post_id)
+    else:
+        form = CommentForm(request.POST or None)
+    return post_view(request, username, post_id, form=form)
