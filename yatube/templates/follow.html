@@ -1,18 +1,15 @@
 {% extends "base.html" %}
-{% load cache %}
-{% block title %} Последние обновления {% endblock %}
+{% block title %} Избранные авторы {% endblock %}
 
 {% block content %}
     <div class="container">
         {% include "menu.html" with index=True %}
-           <h1> Последние обновления на сайте</h1>
+           <h1> Избранные авторы</h1>
             <!-- Вывод ленты записей -->
-{% cache 20 index_page %}
                 {% for post in page %}
                   <!-- Вот он, новый include! -->
                     {% include "post_item.html" with post=post %}
                 {% endfor %}
-{% endcache%}
     </div>
 
         <!-- Вывод паджинатора -->
@@ -20,4 +17,3 @@
             {% include "paginator.html" with items=page paginator=paginator%}
         {% endif %}
 {% endblock %}
-
